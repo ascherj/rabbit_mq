@@ -6,7 +6,6 @@ def process_message(ch, method, properties, body):
     print("[x] Received %r" % body.decode())
     time.sleep(body.count(b'.'))
     print("[x] Done")
-    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 # Create a main method to run
@@ -20,17 +19,22 @@ def main():
     # Open a channel to RabbitMQ
     channel = connection.channel()
 
-    # Create a queue if it does not exist
-    channel.queue_declare(queue='task_queue', durable=True)
+    # Create an exchange if it does not exist
+    channel.exchange_declare('tasks', exchange_type='fanout')
 
-    # Set the number of messages to process at a time
-    channel.basic_qos(prefetch_count=1)
+    # Create a queue if it does not exist
+    result = channel.queue_declare(queue='', exclusive=True)
+
+    queue_name = result.method.queue
+
+    channel.queue_bind(exchange='tasks', queue=queue_name)
 
     # Configure the consumer to call the process_message function
     # when a message arrives
     channel.basic_consume(
-        queue='task_queue',
+        queue=queue_name,
         on_message_callback=process_message,
+        auto_ack=True
     )
 
     # Print a status

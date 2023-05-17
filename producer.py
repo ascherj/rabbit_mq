@@ -9,18 +9,15 @@ connection = pika.BlockingConnection(parameters)
 # Open a channel to RabbitMQ
 channel = connection.channel()
 
-# Create a queue if it does not exist
-channel.queue_declare(queue='task_queue', durable=True)
+# Create an exchange if it does not exist
+channel.exchange_declare(exchange='tasks', exchange_type='fanout')
 
 message = ' '.join(sys.argv[1:]) or "Hello World!"
 
 # Send the message to the queue
-channel.basic_publish(exchange='',
-                      routing_key='task_queue',
-                      body=message,
-                      properties=pika.BasicProperties(
-                            delivery_mode = pika.spec.PERSISTENT_DELIVERY_MODE,
-                      ))
+channel.basic_publish(exchange='tasks',
+                      routing_key='',
+                      body=message)
 
 # Print a status message
 print("[x] Sent %r" % message)
